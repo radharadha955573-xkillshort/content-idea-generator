@@ -42,4 +42,172 @@ const DEFAULT_IDEAS = [
   { id:28, title:"Mere saath ek din — content kaise banta hai?", category:"Sales", format:"Mini Doc", hook:"Script se shoot tak — yeh sab 18 ghante mein hota hai.", angle:"Behind the scenes access", why:"BTS content humanizes the creator and builds deeper connection with process-curious audience." },
   { id:29, title:"Yeh hai meri research process — copy karo", category:"Sales", format:"Explainer", hook:"Main fake news se aise bachta hoon — step by step.", angle:"Skill share + authority", why:"Teaching your process positions you as expert and attracts creators as audience." },
   { id:30, title:"2025 mein main yeh nahi karunga — creator boundaries", category:"Sales", format:"Talking Head", hook:"Kuch topics hain jo main nahi chhunuunga. Reason jaante ho?", angle:"Values-based positioning", why:"Showing what you stand against is as powerful as showing what you stand for." },
-];
+];export default function ContentIdeaGenerator() {
+  const [niche, setNiche] = useState("");
+  const [audience, setAudience] = useState("");
+  const [ideas, setIdeas] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [expandedId, setExpandedId] = useState(null);
+
+  const generateIdeas = async (forceDefault = false) => {
+    if (!niche.trim() && !forceDefault) {
+      setError("Niche daalo pehle.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    setIdeas(null);
+    setExpandedId(null);
+
+    if (forceDefault) {
+      setTimeout(() => {
+        setIdeas(DEFAULT_IDEAS);
+        setLoading(false);
+      }, 800);
+      return;
+    }
+
+    const prompt = `You are a content strategist for Indian documentary/social commentary creators (Instagram + YouTube).
+Generate exactly 30 content ideas for niche: "${niche}"${audience ? `, audience: "${audience}"` : ""}.
+CRITICAL: Return ONLY a raw JSON array. No markdown. No backticks. No explanation. Start with [ and end with ].
+Each object must have exactly these keys:
+"id" (1-30), "title" (max 10 words), "category" ("Reach" or "Trust" or "Sales"), "format" (one of: "Short Reel","Talking Head","Mini Doc","Explainer","Series","Voiceover B-Roll","Storytime"), "hook" (max 15 words, Hinglish ok), "why" (1-2 sentences), "angle" (3-5 words)
+Distribute EXACTLY: 10 Reach, 10 Trust, 10 Sales. Start directly with [`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const raw = (data.content?.find(b => b.type === "text")?.text || "").trim();
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch {
+        const start = raw.indexOf("[");
+        const end = raw.lastIndexOf("]");
+        if (start !== -1 && end !== -1) parsed = JSON.parse(raw.slice(start, end + 1));
+        else throw new Error("No JSON array found");
+      }
+      if (!Array.isArray(parsed) || parsed.length < 5) throw new Error("Bad response");
+      setIdeas(parsed);
+    } catch (e) {
+      setError("API se connect nahi ho paaya. Neeche wala button try karo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = ideas && activeFilter !== "All" ? ideas.filter(i => i.category === activeFilter) : ideas;
+  const counts = ideas ? {
+    All: ideas.length,
+    Reach: ideas.filter(i => i.category === "Reach").length,
+    Trust: ideas.filter(i => i.category === "Trust").length,
+    Sales: ideas.filter(i => i.category === "Sales").length,
+  } : {};
+return (
+    <div style={{ minHeight: "100vh", background: "#0A0A0F", color: "#E8E8F0", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+      <div style={{ background: "linear-gradient(135deg,#0A0A0F,#12101A)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "28px 20px 24px", textAlign: "center" }}>
+        <div style={{ fontSize: "10px", letterSpacing: "3px", color: "#A259FF", fontWeight: 700, marginBottom: "8px", textTransform: "uppercase" }}>AI Content Strategist</div>
+        <h1 style={{ fontSize: "clamp(20px,5vw,32px)", fontWeight: 800, margin: "0 0 6px", background: "linear-gradient(135deg,#fff 30%,#A259FF 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Documentary Content Ideas</h1>
+        <p style={{ color: "#666680", fontSize: "12px", margin: 0 }}>30 ideas · Reach · Trust · Sales · Hooks included</p>
+      </div>
+
+      <div style={{ padding: "24px 20px 0", maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "12px" }}>
+          <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "#A259FF", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>Tumhara Niche *</label>
+          <input value={niche} onChange={e => setNiche(e.target.value)} onKeyDown={e => e.key === "Enter" && generateIdeas()}
+            placeholder="e.g. Social issues, Political corruption..."
+            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(162,89,255,0.3)", borderRadius: "10px", padding: "12px 14px", color: "#E8E8F0", fontSize: "14px", outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ marginBottom: "16px" }}>
+          <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "#666680", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>Target Audience (optional)</label>
+          <input value={audience} onChange={e => setAudience(e.target.value)} onKeyDown={e => e.key === "Enter" && generateIdeas()}
+            placeholder="e.g. 18-28 years, college students..."
+            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px", padding: "12px 14px", color: "#E8E8F0", fontSize: "14px", outline: "none", boxSizing: "border-box" }} />
+        </div>
+        {error && <p style={{ color: "#FF6B35", fontSize: "13px", margin: "0 0 10px", textAlign: "center" }}>{error}</p>}
+        <button onClick={() => generateIdeas(false)} disabled={loading}
+          style={{ width: "100%", padding: "13px", background: loading ? "rgba(162,89,255,0.3)" : "linear-gradient(135deg,#A259FF,#6B2FD9)", border: "none", borderRadius: "10px", color: "#fff", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", marginBottom: "10px" }}>
+          {loading ? "✨ Generating..." : "⚡ Generate 30 Ideas (AI)"}
+        </button>
+        <button onClick={() => generateIdeas(true)} disabled={loading}
+          style={{ width: "100%", padding: "11px", background: "transparent", border: "1px solid rgba(255,107,53,0.4)", borderRadius: "10px", color: "#FF6B35", fontSize: "13px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer" }}>
+          📋 Gourav ke Niche ke Liye Ready Ideas Load Karo
+        </button>
+      </div>
+
+      {loading && (
+        <div style={{ textAlign: "center", padding: "50px 20px" }}>
+          <div style={{ width: "36px", height: "36px", border: "3px solid rgba(162,89,255,0.2)", borderTop: "3px solid #A259FF", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 14px" }} />
+          <p style={{ color: "#666680", fontSize: "13px" }}>Ideas generate ho rahi hain...</p>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {ideas && (
+        <div style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px 40px" }}>
+          <div style={{ display: "flex", gap: "8px", marginBottom: "18px", flexWrap: "wrap" }}>
+            {["All","Reach","Trust","Sales"].map(cat => {
+              const meta = cat !== "All" ? CATEGORY_META[cat] : null;
+              const isActive = activeFilter === cat;
+              return (
+                <button key={cat} onClick={() => setActiveFilter(cat)}
+                  style={{ padding: "6px 13px", borderRadius: "20px", border: isActive ? `1px solid ${meta?.color||"#A259FF"}` : "1px solid rgba(255,255,255,0.1)", background: isActive ? (meta?.bg||"rgba(162,89,255,0.12)") : "transparent", color: isActive ? (meta?.color||"#A259FF") : "#666680", fontSize: "11px", fontWeight: 700, cursor: "pointer", textTransform: "uppercase" }}>
+                  {cat !== "All" && meta?.icon+" "}{cat} <span style={{opacity:0.6}}>({counts[cat]})</span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+            {filtered.map(idea => {
+              const meta = CATEGORY_META[idea.category] || CATEGORY_META.Reach;
+              const isOpen = expandedId === idea.id;
+              const fmtColor = FORMAT_COLORS[idea.format] || "#A259FF";
+              return (
+                <div key={idea.id} onClick={() => setExpandedId(isOpen ? null : idea.id)}
+                  style={{ background: isOpen ? meta.bg : "rgba(255,255,255,0.02)", border: `1px solid ${isOpen ? meta.border : "rgba(255,255,255,0.06)"}`, borderRadius: "11px", padding: "13px 15px", cursor: "pointer" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", gap: "7px", marginBottom: "6px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "4px", background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, textTransform: "uppercase" }}>{meta.icon} {idea.category}</span>
+                        <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "4px", background: "rgba(255,255,255,0.04)", color: fmtColor, border: "1px solid rgba(255,255,255,0.08)" }}>{idea.format}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#E8E8F0", lineHeight: 1.4 }}>{idea.id}. {idea.title}</p>
+                    </div>
+                    <span style={{ color: "#444460", fontSize: "14px" }}>{isOpen ? "▲" : "▼"}</span>
+                  </div>
+                  {isOpen && (
+                    <div style={{ marginTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
+                      <div style={{ marginBottom: "9px" }}>
+                        <div style={{ fontSize: "10px", fontWeight: 700, color: "#666680", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "4px" }}>🎯 Hook</div>
+                        <p style={{ margin: 0, fontSize: "13px", color: meta.color, fontStyle: "italic" }}>"{idea.hook}"</p>
+                      </div>
+                      <div style={{ marginBottom: "9px" }}>
+                        <div style={{ fontSize: "10px", fontWeight: 700, color: "#666680", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "4px" }}>💡 Angle</div>
+                        <span style={{ fontSize: "11px", padding: "3px 9px", borderRadius: "5px", background: "rgba(255,255,255,0.04)", color: "#C0C0D8", border: "1px solid rgba(255,255,255,0.08)" }}>{idea.angle}</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "10px", fontWeight: 700, color: "#666680", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "4px" }}>📈 Why It'll Perform</div>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#888899", lineHeight: 1.5 }}>{idea.why}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ textAlign: "center", color: "#333350", fontSize: "11px", marginTop: "24px" }}>Kisi bhi card pe tap karo — hook, angle aur insight dekhne ke liye</p>
+        </div>
+      )}
+    </div>
+  );
+                  }
