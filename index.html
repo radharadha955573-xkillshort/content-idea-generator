@@ -1,18 +1,201 @@
-<!DOCTYPE html>
+https://cdnjs.cloudflare.com/ajax/<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Content Idea Generator</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0A0F;color:#E8E8F0;font-family:'Inter','Segoe UI',sans-serif;min-height:100vh}
+.header{background:linear-gradient(135deg,#0A0A0F,#12101A);border-bottom:1px solid rgba(255,255,255,0.06);padding:28px 20px 24px;text-align:center}
+.header-tag{font-size:10px;letter-spacing:3px;color:#A259FF;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+.header h1{font-size:clamp(20px,5vw,32px);font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#fff 30%,#A259FF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:#666680;font-size:12px}
+.input-section{padding:24px 20px 0;max-width:600px;margin:0 auto}
+label{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+input{width:100%;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 14px;color:#E8E8F0;font-size:14px;outline:none;margin-bottom:12px}
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#A259FF,#6B2FD9);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px}
+.btn-secondary{width:100%;padding:11px;background:transparent;border:1px solid rgba(255,107,53,0.4);border-radius:10px;color:#FF6B35;font-size:13px;font-weight:600;cursor:pointer}
+.btn-primary:disabled,.btn-secondary:disabled{opacity:0.4;cursor:not-allowed}
+.error{color:#FF6B35;font-size:13px;text-align:center;margin-bottom:10px}
+.loading{text-align:center;padding:50px 20px}
+.spinner{width:36px;height:36px;border:3px solid rgba(162,89,255,0.2);border-top:3px solid #A259FF;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{max-width:600px;margin:0 auto;padding:24px 20px 40px}
+.filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter-btn{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase}
+.ideas-list{display:flex;flex-direction:column;gap:9px}
+.idea-card{border-radius:11px;padding:13px 15px;cursor:pointer}
+.idea-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.idea-badges{display:flex;gap:7px;margin-bottom:6px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.idea-title{font-size:13px;font-weight:700;color:#E8E8F0;line-height:1.4}
+.arrow{color:#444460;font-size:14px}
+.idea-detail{margin-top:12px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px}
+.detail-label{font-size:10px;font-weight:700;color:#666680;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.detail-hook{font-size:13px;font-style:italic;margin-bottom:9px}
+.detail-angle{font-size:11px;padding:3px 9px;border-radius:5px;background:rgba(255,255,255,0.04);color:#C0C0D8;border:1px solid rgba(255,255,255,0.08)}
+.detail-why{font-size:12px;color:#888899;line-height:1.5;margin-top:9px}
+.footer{text-align:center;color:#333350;font-size:11px;margin-top:24px}
+</style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" src="./src/App.jsx"></script>
-<script type="text/babel">
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ContentIdeaGenerator));
+
+<div class="header">
+  <div class="header-tag">AI Content Strategist</div>
+  <h1>Documentary Content Ideas</h1>
+  <p>30 ideas · Reach · Trust · Sales · Hooks included</p>
+</div>
+
+<div class="input-section">
+  <label style="color:#A259FF">Tumhara Niche *</label>
+  <input id="niche" placeholder="e.g. Social issues, Political corruption, Education reality..."/>
+  <label style="color:#666680">Target Audience (optional)</label>
+  <input id="audience" placeholder="e.g. 18-28 years, college students, UPSC aspirants..."/>
+  <div id="error" class="error" style="display:none"></div>
+  <button class="btn-primary" id="btn-ai" onclick="generateAI()">⚡ Generate 30 Ideas (AI)</button>
+  <button class="btn-secondary" onclick="loadDefault()">📋 Gourav ke Niche ke Liye Ready Ideas Load Karo</button>
+</div>
+
+<div id="loading" class="loading" style="display:none">
+  <div class="spinner"></div>
+  <p style="color:#666680;font-size:13px">Ideas generate ho rahi hain...</p>
+</div>
+
+<div id="results" style="display:none">
+  <div class="results">
+    <div class="filters" id="filters"></div>
+    <div class="ideas-list" id="ideas-list"></div>
+    <p class="footer">Kisi bhi card pe tap karo — hook, angle aur insight dekhne ke liye</p>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  Reach:{color:"#FF6B35",bg:"rgba(255,107,53,0.08)",border:"rgba(255,107,53,0.25)",icon:"🔥"},
+  Trust:{color:"#00C2FF",bg:"rgba(0,194,255,0.08)",border:"rgba(0,194,255,0.25)",icon:"🧠"},
+  Sales:{color:"#A259FF",bg:"rgba(162,89,255,0.08)",border:"rgba(162,89,255,0.25)",icon:"💰"}
+};
+const FMTC = {"Short Reel":"#FF6B35","Talking Head":"#00C2FF","Mini Doc":"#A259FF","Explainer":"#FFD700","Series":"#00E5A0","Voiceover B-Roll":"#FF6B35","Storytime":"#00C2FF"};
+
+let allIdeas=[], activeFilter="All", expandedId=null;
+
+const DEFAULT=[
+  {id:1,title:"India mein degree hai, job nahi — kyun?",category:"Reach",format:"Short Reel",hook:"4 saal ki mehnat, aur result? Zero job offer.",angle:"Frustrated job seeker",why:"Millions of graduates relate instantly. Viral potential high because it validates a shared pain."},
+  {id:2,title:"NEET paper leak ka sach jo media nahi batata",category:"Reach",format:"Voiceover B-Roll",hook:"Yeh sirf paper leak nahi tha — yeh system ka failure tha.",angle:"Outrage + hidden truth",why:"Conspiracy + education = massive reach among students and parents."},
+  {id:3,title:"Instagram pe jo dikhta hai, woh reality nahi hai",category:"Reach",format:"Talking Head",hook:"Yeh influencer broke tha 6 mahine pehle.",angle:"Reality check shock",why:"Social media users feel deceived — this triggers shares and comments."},
+  {id:4,title:"Kisan ki ek din ki kamai jaante ho kitni hai?",category:"Reach",format:"Voiceover B-Roll",hook:"Jo roti tum khaate ho, usse banana waale ko 30 rupye milte hain.",angle:"Guilt + empathy trigger",why:"Urban audience ko rural reality se connect karata hai — highly shareable."},
+  {id:5,title:"Govt job ka sapna — trap hai ya reality?",category:"Reach",format:"Short Reel",hook:"10 saal preparation, 1 seat, 5 lakh candidates.",angle:"Dream vs reality clash",why:"SSC/UPSC aspirants = massive audience in India. Direct pain point."},
+  {id:6,title:"Mobile addiction — yeh teri galti nahi hai",category:"Reach",format:"Explainer",hook:"Yeh app tumhe addict karne ke liye design kiya gaya hai.",angle:"Victim validation",why:"Blaming the system not the user = massive positive response + shares."},
+  {id:7,title:"Dowry ban hai, fir bhi chal raha hai — kyun?",category:"Reach",format:"Mini Doc",hook:"1961 mein ban hua. 2024 mein bhi zinda hai. Kyun?",angle:"System failure shock",why:"Gender + social issues = broad audience reach across age groups."},
+  {id:8,title:"Inflation ka sach — 1 figure jo sarkar nahi batati",category:"Reach",format:"Short Reel",hook:"Government kehti hai 5% inflation. Tumhara ghar kehta hai 30%.",angle:"Betrayal by authority",why:"Everyone feels inflation. This validates their experience vs official data."},
+  {id:9,title:"Psychology: Log desh chhod kyun rahe hain?",category:"Reach",format:"Explainer",hook:"Har mahine 1 lakh padhe-likhe Indians desh chhod rahe hain.",angle:"National pride + fear",why:"Brain drain debate always trends. Emotional + factual combination."},
+  {id:10,title:"Ek village school ki reality — camera ke saath",category:"Reach",format:"Mini Doc",hook:"Is school mein teacher hai, building hai — lekin padhne wala koi nahi.",angle:"Systemic neglect expose",why:"Rural education reality shocks urban viewers. Documentary style drives deep engagement."},
+  {id:11,title:"Education system kaise broke hua — timeline",category:"Trust",format:"Explainer",hook:"1947 se 2024 tak — kab, kahan, kya galat hua.",angle:"Historical deep-dive",why:"Research-based content builds authority. UPSC audience loves timelines."},
+  {id:12,title:"Gig economy ka sach — Swiggy waale ki kahani",category:"Trust",format:"Storytime",hook:"Uski degree thi, fir bhi delivery karta hai. Yeh uski galti nahi.",angle:"Dignity + system critique",why:"Personal story + economic reality = deep trust building content."},
+  {id:13,title:"Loan waiver kya hai aur kisan ko fayda kyun nahi",category:"Trust",format:"Explainer",hook:"Sarkar ne 2 lakh crore maaf kiye. Kisan fir bhi kyun toota hai?",angle:"Policy reality gap",why:"Explains complex policy simply. Builds credibility as a reliable source."},
+  {id:14,title:"Hum galat news kyun share karte hain?",category:"Trust",format:"Talking Head",hook:"Tumhara brain jhooth zyada quickly believe karta hai — science bolta hai.",angle:"Self-awareness unlock",why:"Meta content about media literacy builds deep trust with aware audience."},
+  {id:15,title:"Women workforce India mein kyu gir rahi hai?",category:"Trust",format:"Explainer",hook:"1990 mein 30% women working. 2024 mein 19%. Kyun?",angle:"Data-driven revelation",why:"Statistics + social issue = shareable, citable content."},
+  {id:16,title:"Sarkari scheme jo kaam karti hai — honest review",category:"Trust",format:"Talking Head",hook:"Main sirf criticism nahi karta — yeh scheme actually helpful hai.",angle:"Balanced honest voice",why:"Being fair builds more trust than constant negativity."},
+  {id:17,title:"Kaise ek scam poore district ko barbad kar deta hai",category:"Trust",format:"Mini Doc",hook:"Ek chit fund scheme. 5000 families. Sabka paisa gaya.",angle:"Investigative expose",why:"Real-life scam stories = high retention + shares."},
+  {id:18,title:"Mental health India mein — kyu log baat nahi karte?",category:"Trust",format:"Explainer",hook:"India mein 15 crore log mental illness se suffer karte hain. Sirf 3% treatment lete hain.",angle:"Stigma + system failure",why:"Sensitive topic handled with research builds deep community trust."},
+  {id:19,title:"UPI ne kaise change ki rural India ki economy?",category:"Trust",format:"Explainer",hook:"Is gaon mein bank nahi tha. UPI se sab badal gaya.",angle:"Positive change documentary",why:"Positive + factual = shareable. Shows nuanced thinking."},
+  {id:20,title:"India ki ranking har saal kyun girti hai?",category:"Trust",format:"Explainer",hook:"Press freedom, hunger index, happiness — hum gir kyun rahe hain?",angle:"Data over emotion",why:"Index-based content gets cited and shared heavily by UPSC/news audience."},
+  {id:21,title:"Mera content journey — zero se yahan tak",category:"Sales",format:"Storytime",hook:"6 mahine pehle mujhe koi nahi jaanta tha. Aaj tum yahan ho.",angle:"Authentic origin story",why:"Personal journey builds parasocial connection — converts viewers to loyal followers."},
+  {id:22,title:"Yeh creators se main kyun alag hoon",category:"Sales",format:"Talking Head",hook:"Main sirf viral nahi, sach batane aaya hoon.",angle:"Differentiation positioning",why:"Positioning content turns casual viewers into committed audience members."},
+  {id:23,title:"Mujhe follow karo — yeh reason hai",category:"Sales",format:"Short Reel",hook:"Har hafte ek aisi reality jo koi nahi batata.",angle:"Value promise CTA",why:"Direct value proposition. Converts view to follow when delivered authentically."},
+  {id:24,title:"India ki woh reality jo main cover karunga",category:"Sales",format:"Talking Head",hook:"Yeh topics hain jo main 2025 mein expose karunga.",angle:"Future content teaser",why:"Series announcements build anticipation and long-term audience retention."},
+  {id:25,title:"Agar tum UPSC/SSC aspirant ho — yeh dekho",category:"Sales",format:"Short Reel",hook:"Yeh channel tumhare GS ke liye free resource ban sakta hai.",angle:"Niche audience direct pitch",why:"Targeting a specific sub-audience converts at much higher rate than broad CTA."},
+  {id:26,title:"Kya main sponsored content karunga? Honest jawab",category:"Sales",format:"Talking Head",hook:"Mujhe offer aa rahe hain. Yeh meri policy hai.",angle:"Transparency = trust",why:"Honesty about monetization paradoxically increases audience trust and support."},
+  {id:27,title:"Tumhare comments ne yeh episode banwaya",category:"Sales",format:"Storytime",hook:"Tumne pucha, maine research kiya. Yeh lo jawab.",angle:"Community co-creation",why:"Audience involvement = ownership feeling = stronger loyalty and shares."},
+  {id:28,title:"Mere saath ek din — content kaise banta hai?",category:"Sales",format:"Mini Doc",hook:"Script se shoot tak — yeh sab 18 ghante mein hota hai.",angle:"Behind the scenes access",why:"BTS content humanizes the creator and builds deeper connection."},
+  {id:29,title:"Yeh hai meri research process — copy karo",category:"Sales",format:"Explainer",hook:"Main fake news se aise bachta hoon — step by step.",angle:"Skill share + authority",why:"Teaching your process positions you as expert and attracts creators as audience."},
+  {id:30,title:"2025 mein main yeh nahi karunga — creator boundaries",category:"Sales",format:"Talking Head",hook:"Kuch topics hain jo main nahi chhunuunga. Reason jaante ho?",angle:"Values-based positioning",why:"Showing what you stand against is as powerful as showing what you stand for."}
+];
+
+function showError(msg){const e=document.getElementById('error');e.textContent=msg;e.style.display=msg?'block':'none';}
+function setLoading(v){document.getElementById('loading').style.display=v?'block':'none';}
+
+function loadDefault(){
+  setLoading(true);
+  setTimeout(()=>{setLoading(false);renderIdeas(DEFAULT);},600);
+}
+
+async function generateAI(){
+  const niche=document.getElementById('niche').value.trim();
+  const audience=document.getElementById('audience').value.trim();
+  if(!niche){showError('Niche daalo pehle.');return;}
+  showError('');
+  setLoading(true);
+  document.getElementById('results').style.display='none';
+  const prompt=`You are a content strategist for Indian documentary creators. Generate exactly 30 content ideas for niche: "${niche}"${audience?`, audience: "${audience}"`:''}. Return ONLY a raw JSON array, no markdown, no backticks. Each object: "id"(1-30),"title"(max 10 words),"category"("Reach","Trust","Sales"),"format"(one of Short Reel/Talking Head/Mini Doc/Explainer/Series/Voiceover B-Roll/Storytime),"hook"(max 15 words),"why"(1-2 sentences),"angle"(3-5 words). Exactly 10 each category. Start with [`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:prompt}]})});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const raw=(data.content?.find(b=>b.type==='text')?.text||'').trim();
+    let parsed;
+    try{parsed=JSON.parse(raw);}catch{const s=raw.indexOf('['),e=raw.lastIndexOf(']');if(s!==-1&&e!==-1)parsed=JSON.parse(raw.slice(s,e+1));else throw new Error('parse fail');}
+    if(!Array.isArray(parsed)||parsed.length<5) throw new Error('bad');
+    setLoading(false);
+    renderIdeas(parsed);
+  }catch(e){
+    setLoading(false);
+    showError('API error. Neeche wala button try karo.');
+  }
+}
+
+function renderIdeas(ideas){
+  allIdeas=ideas; activeFilter='All'; expandedId=null;
+  document.getElementById('results').style.display='block';
+  renderFilters(); renderCards();
+}
+
+function renderFilters(){
+  const counts={All:allIdeas.length,Reach:allIdeas.filter(i=>i.category==='Reach').length,Trust:allIdeas.filter(i=>i.category==='Trust').length,Sales:allIdeas.filter(i=>i.category==='Sales').length};
+  const f=document.getElementById('filters');
+  f.innerHTML=['All','Reach','Trust','Sales'].map(cat=>{
+    const m=CATS[cat];
+    const active=activeFilter===cat;
+    const col=m?m.color:'#A259FF';
+    const bg=m?m.bg:'rgba(162,89,255,0.12)';
+    const border=m?m.border:'rgba(162,89,255,0.3)';
+    return `<button class="filter-btn" onclick="setFilter('${cat}')" style="border:1px solid ${active?col:'rgba(255,255,255,0.1)'};background:${active?bg:'transparent'};color:${active?col:'#666680'}">${cat!=='All'?m.icon+' ':''}${cat} <span style="opacity:0.6">(${counts[cat]})</span></button>`;
+  }).join('');
+}
+
+function setFilter(cat){activeFilter=cat;expandedId=null;renderFilters();renderCards();}
+
+function toggleCard(id){expandedId=expandedId===id?null:id;renderCards();}
+
+function renderCards(){
+  const list=activeFilter==='All'?allIdeas:allIdeas.filter(i=>i.category===activeFilter);
+  document.getElementById('ideas-list').innerHTML=list.map(idea=>{
+    const m=CATS[idea.category]||CATS.Reach;
+    const open=expandedId===idea.id;
+    const fc=FMTC[idea.format]||'#A259FF';
+    return `<div class="idea-card" onclick="toggleCard(${idea.id})" style="background:${open?m.bg:'rgba(255,255,255,0.02)'};border:1px solid ${open?m.border:'rgba(255,255,255,0.06)'}">
+      <div class="idea-top">
+        <div style="flex:1">
+          <div class="idea-badges">
+            <span class="badge" style="background:${m.bg};color:${m.color};border:1px solid ${m.border}">${m.icon} ${idea.category}</span>
+            <span class="badge" style="background:rgba(255,255,255,0.04);color:${fc};border:1px solid rgba(255,255,255,0.08)">${idea.format}</span>
+          </div>
+          <p class="idea-title">${idea.id}. ${idea.title}</p>
+        </div>
+        <span class="arrow">${open?'▲':'▼'}</span>
+      </div>
+      ${open?`<div class="idea-detail">
+        <div class="detail-label">🎯 Hook</div>
+        <p class="detail-hook" style="color:${m.color}">"${idea.hook}"</p>
+        <div class="detail-label">💡 Angle</div>
+        <span class="detail-angle">${idea.angle}</span>
+        <div class="detail-label" style="margin-top:9px">📈 Why It'll Perform</div>
+        <p class="detail-why">${idea.why}</p>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
